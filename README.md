@@ -1,5 +1,5 @@
 # NM i AI — Object Detection & Classification
-
+## SEE REPRODUCE.md for info
 ## Solution Overview
 
 Two-stage pipeline for detecting and classifying grocery products on store shelves.
