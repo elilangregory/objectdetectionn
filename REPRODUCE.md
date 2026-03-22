@@ -1,46 +1,49 @@
 # Reproduce Final Submission (nr7)
 
-All weights are included in the repo. No training needed.
+All weights and pre-computed data are included in the repo. **No training required.** The `submission_nr7/` directory contains everything needed to create the exact submission that scored 0.8945.
 
-## Quick start
+## Create submission (no training, no data needed)
 
 ```bash
 git clone https://github.com/elilangregory/objectdetectionn.git
-cd objectdetectionn
-python -m venv venv
-venv/bin/pip install torch torchvision timm==0.9.12 onnxruntime numpy Pillow opencv-python
-cd submission_nr7
+cd objectdetectionn/submission_nr7
 zip -r ../submission_nr7.zip . -x '.*' '__MACOSX/*'
 ```
 
-`submission_nr7.zip` is the final submission.
+Done. `submission_nr7.zip` is the final submission, ready to upload.
 
-## Weights used in final submission
+## What's inside submission_nr7/
 
-Only the files inside `submission_nr7/`:
+All files are pre-built and included in the repo:
 
-| File | What it is |
-|------|-----------|
-| `third_medium_best.onnx` (99MB) | YOLO detector (960px) |
-| `second_small_best.onnx` (43MB) | YOLO detector (768px) |
-| `dinov2_weights.pt` (84MB) | Fine-tuned DINOv2 ViT-S/14 |
-| `centroids.json` (3MB) | 355 category prototypes |
+| File | Size | What it is |
+|------|------|-----------|
+| `run.py` | <1KB | Inference pipeline (entry point) |
+| `third_medium_best.onnx` | 99MB | YOLO detector (960px scale) |
+| `second_small_best.onnx` | 43MB | YOLO detector (768px scale) |
+| `dinov2_weights.pt` | 84MB | Fine-tuned DINOv2 ViT-S/14 |
+| `centroids.json` | 3MB | 355 pre-computed category prototypes |
 
-Other weights in the repo (`dinov2_finetuned.pt`, `weights/`) are only for retraining — not used in the submission.
+Nothing else is needed. No Python environment, no training data, no extra downloads.
 
-## Validate locally (needs training images)
+## Validate locally (optional)
+
+Requires a Python environment and training images (not in git):
 
 ```bash
-cd ..
+python -m venv venv
+venv/bin/pip install torch torchvision timm==0.9.12 onnxruntime numpy Pillow opencv-python
 venv/bin/python local_validate.py submission_nr7.zip --n 5
 ```
 
-## Retrain from scratch
+## Retrain from scratch (optional)
+
+Only needed if you want to train new weights instead of using the provided ones.
 
 Requires data not in git:
 ```
 train1/images/              # 248 training images
-NM_NGD_product_images/      # Studio product photos
+NM_NGD_product_images/      # Studio product photos (5 angles per product)
 ```
 
 ```bash
