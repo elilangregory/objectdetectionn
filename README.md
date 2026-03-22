@@ -1,84 +1,61 @@
 # NM i AI — Object Detection & Classification
-## SEE REPRODUCE.md for info
-## Solution Overview
-
-Two-stage pipeline for detecting and classifying grocery products on store shelves.
 
 **Score: 0.8945** (0.7 × detection_mAP + 0.3 × classification_mAP)
 
-### Detection
-Two YOLO detectors run at different scales (960px and 768px) and fuse results with Weighted Box Fusion. This catches products at varying sizes and distances.
+## Recreate the submission
 
-### Classification
-Each detected crop is embedded with a fine-tuned DINOv2 ViT-S/14 using TTA (identity + horizontal flip). The embedding is matched via cosine similarity against 355 category centroids — one prototype vector per product, averaged from studio reference photos and training shelf crops. Predictions below cosine similarity 0.50 are dropped.
+All weights are pre-built and included. Just clone and zip:
+
+```bash
+git clone https://github.com/elilangregory/objectdetectionn.git
+cd objectdetectionn/submission_nr7
+zip -r ../submission_nr7.zip . -x '.*' '__MACOSX/*'
+```
+
+`submission_nr7.zip` is the final submission. See [REPRODUCE.md](REPRODUCE.md) for validation and retraining instructions.
+
+## Solution
+
+Two-stage pipeline for detecting and classifying grocery products on store shelves.
+
+### Step 1 — Detection
+
+Two YOLO detectors run on each image at different scales (960px and 768px). Their predictions are merged with Weighted Box Fusion, which combines overlapping boxes from both scales into one refined bounding box per product. This catches products at varying sizes and distances.
+
+### Step 2 — Classification
+
+Each detected product is cropped (with 12% context padding) and embedded with a fine-tuned DINOv2 ViT-S/14 (224px, with TTA: identity + horizontal flip). The 384-dim embedding is matched via cosine similarity against 355 pre-computed category centroids. Each centroid is the average embedding of all studio reference photos and training shelf crops for that product category. The closest match becomes the prediction. If cosine similarity is below 0.50, the detection is dropped.
 
 ### Why centroid matching?
-We tested multiple classification approaches: individual reference matching, linear classifier heads, and multiclass YOLO. Centroid matching scored best on our cross-validation AND looked most robust on unseen test images. It generalizes because it matches against domain-independent studio photos rather than memorizing training data.
 
-## Build
+We tested multiple classification approaches:
 
-### Prerequisites
-```
-Python 3.11+
-torch, torchvision, timm==0.9.12, ultralytics, onnxruntime, numpy, Pillow, opencv-python
-```
+- **Individual reference matching** — noisy, one bad studio angle flips the result
+- **Linear classifier head** — 90.5% accuracy on training data but overfits, looks worse on unseen images
+- **Multiclass YOLO** — strong on common products but unreliable on rare ones, sometimes confidently wrong
 
-### Required data (not in git)
-```
-train1/images/                  # 248 training images
-NM_NGD_product_images/          # Studio product photos (5 angles per product)
-```
+Centroid matching scored best on cross-validation and looked most robust on real store images we photographed ourselves. It generalizes because it matches against domain-independent studio product photos rather than memorizing training data patterns. Averaging multiple reference images per category into one centroid smooths out noise from bad angles or lighting.
 
-### Step 1: Fine-tune DINOv2
-Contrastive learning: shelf crop ↔ studio photo pairs close the domain gap.
-```bash
-venv/bin/python scripts/finetune_dinov2.py --epochs 20 --batch 64
-# Output: dinov2_finetuned.pt
-```
+### How we fine-tuned DINOv2
 
-### Step 2: Build centroids
-Embed studio photos + training crops, average per category.
-```bash
-venv/bin/python scripts/build_centroids.py
-cp centroids.json submission_nr7/
-```
-
-### Step 3: Zip and validate
-```bash
-cd submission_nr7
-zip -r ../submission_nr7.zip . -x '.*' '__MACOSX/*'
-cd ..
-venv/bin/python local_validate.py submission_nr7.zip --n 5
-```
-
-## Submission contents
-
-| File | Size | Purpose |
-|------|------|---------|
-| run.py | <1KB | Pipeline entry point |
-| third_medium_best.onnx | 99MB | YOLO detector (960px) |
-| second_small_best.onnx | 43MB | YOLO detector (768px) |
-| dinov2_weights.pt | 84MB | Fine-tuned DINOv2 ViT-S/14 |
-| centroids.json | 3MB | 355 category prototypes |
-| **Total** | **229MB** | |
+Base DINOv2 ViT-S/14 was fine-tuned with contrastive learning (InfoNCE loss). Each training pair consists of a shelf crop (anchor, from training annotations) and a studio reference photo (positive, from NM_NGD product images) of the same product. This teaches the model that a product on a shelf and the same product in a studio photo should have similar embeddings — bridging the domain gap between the two image types.
 
 ## Parameters
 
 | Parameter | Value | Purpose |
 |-----------|-------|---------|
 | DET_CONF | 0.15 | Detection confidence threshold |
-| CLS_CONF | 0.50 | Centroid similarity threshold |
-| WBF_IOU | 0.55 | Box fusion IoU threshold |
-| CROP_CONTEXT | 0.12 | Padding around crops (12%) |
+| CLS_CONF | 0.50 | Centroid cosine similarity threshold |
+| WBF_IOU | 0.55 | Weighted Box Fusion IoU threshold |
+| CROP_CONTEXT | 0.12 | Padding around detected crops |
 
-## Evaluation
+## Submission contents
 
-5-fold cross-validation with studio-only refs (no data leakage):
-```bash
-venv/bin/python agent_ws/cross_validate.py --centroid --cls-conf 0.60
-```
-
-Visualize predictions on unlabeled images:
-```bash
-venv/bin/python scripts/visualize_nr7.py --n 25 --seed 42
-```
+| File | Size | Purpose |
+|------|------|---------|
+| `run.py` | <1KB | Inference pipeline |
+| `third_medium_best.onnx` | 99MB | YOLO detector (960px) |
+| `second_small_best.onnx` | 43MB | YOLO detector (768px) |
+| `dinov2_weights.pt` | 84MB | Fine-tuned DINOv2 ViT-S/14 |
+| `centroids.json` | 3MB | 355 category prototypes |
+| **Total** | **229MB** | |
