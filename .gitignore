@@ -1,0 +1,47 @@
+# Data (images)
+train1/images/
+test_no_annotations/
+NM_NGD_product_images/
+train/images/
+subprojects/
+
+# Old submission directories (not final)
+submission/
+submission_nr2/
+submission_nr3/
+submission_nr4/
+submission_nr5/
+submission_nr6/
+submission_nr8/
+
+# Teammate's multiclass submission (their weights)
+workspaces/multiclass/
+
+# Checkpoints (intermediate training outputs)
+checkpoints/
+agent_ws/checkpoints/
+
+# Unused weight files
+dinov2_v2.pt
+weights/best_v1.pt
+weights/sahi.pt
+
+# Output visualizations
+output_*/
+
+# Cache
+agent_ws/cache/
+__pycache__/
+*.pyc
+
+# Submission zips
+*.zip
+
+# venv
+venv/
+
+# macOS
+.DS_Store
+
+# Temp
+/tmp/
