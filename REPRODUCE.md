@@ -15,6 +15,19 @@ zip -r ../submission_nr7.zip . -x '.*' '__MACOSX/*'
 
 `submission_nr7.zip` is the final submission.
 
+## Weights used in final submission
+
+Only the files inside `submission_nr7/`:
+
+| File | What it is |
+|------|-----------|
+| `third_medium_best.onnx` (99MB) | YOLO detector (960px) |
+| `second_small_best.onnx` (43MB) | YOLO detector (768px) |
+| `dinov2_weights.pt` (84MB) | Fine-tuned DINOv2 ViT-S/14 |
+| `centroids.json` (3MB) | 355 category prototypes |
+
+Other weights in the repo (`dinov2_finetuned.pt`, `weights/`) are only for retraining — not used in the submission.
+
 ## Validate locally (needs training images)
 
 ```bash
